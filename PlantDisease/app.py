@@ -16,7 +16,9 @@ import torch.optim as optim
 import torch.nn.functional as F
 import colorama
 from colorama import Fore, Style
+import matplotlib
 import time
+import random
 
 def main():
     Root_dir = "PlantDisease/plant_diseases_dataset/New Plant Diseases Dataset(Augmented)/New Plant Diseases Dataset(Augmented)"
@@ -48,6 +50,8 @@ def main():
         else:
             print("CPU is available")
             return torch.device("cpu")
+
+    matplotlib.use('Agg')
 
     # for moving data to device (CPU or GPU)
     def to_device(data, device):
@@ -223,10 +227,22 @@ def main():
         print(f"Training completed in: {total_time // 60:.0f} minutes {total_time % 60:.0f} seconds")
         return history
 
-    history = fit_OneCycle(epochs=1, max_lr=0.01, model=model, train_loader=train_dataloader, val_loader=valid_dataloader)
-    print(history)
+    num_epoch = 5
+    lr_rate = 0.01
+    grad_clip = 0.15
+    weight_decay = 1e-4
+    optims = torch.optim.Adam
+    #history = fit_OneCycle(epochs=1, max_lr=0.01, model=model, train_loader=train_dataloader, val_loader=valid_dataloader, weight_decay=weight_decay, grad_clip=grad_clip, opt_func=optims)
+    history = fit_OneCycle(epochs=1, max_lr=lr_rate, model=model, train_loader=train_dataloader, val_loader=valid_dataloader, grad_clip=grad_clip, weight_decay=weight_decay, opt_func=optims)
+
+    #print(history)
     
-    save_model(model, "plant_disease_model.pth")
+    save_model(model, "plant_disease_model_1epochs.pth")
+
+    transform = transforms.Compose([
+        transforms.Resize((256, 256)),
+        transforms.ToTensor(),
+    ])
 
     def predict_image(img, model):
         """Converts image to array and return the predicted class
@@ -238,8 +254,43 @@ def main():
         # Pick index with highest probability
         _, preds = torch.max(yb, dim=1)
         # Retrieve the class label
-
+        
         return train.classes[preds[0].item()]
+
+    def show_prediction_with_confidence(image_path, model, transform, i, randomImage):
+        img = Image.open(image_path)
+        transformed_img = transform(img)
+        
+        predicted_label = predict_image(transformed_img, model)
+        
+        fig.add_subplot(3, 2, i)
+        plt.imshow(img)
+        plt.axis('off')
+        plt.title(f"Predicted: {predicted_label}")
+        print("predic: ", predicted_label, " actual: ", randomImage)
+        return i + 1
+
+    fig = plt.figure(figsize=(8, 6))
+    
+    test_images_dir = 'PlantDisease/plant_diseases_dataset/test/test'
+    image_files = [f for f in os.listdir(test_images_dir) if os.path.isfile(os.path.join(test_images_dir, f))]
+
+    fig = plt.figure(figsize=(12, 12))
+    i = 1  # Start with 1 because subplot indices are 1-based
+
+    # Number of images to display
+    num_images = 6
+
+    for _ in range(num_images):
+        # Randomly select an image
+        random_image = random.choice(image_files)
+        image_path = os.path.join(test_images_dir, random_image)
+        
+        # Check if the image path exists
+        if os.path.exists(image_path):
+            i = show_prediction_with_confidence(image_path, model, transform, i, random_image)
+
+    plt.show()
 
     val_acc = []
     val_loss = []
