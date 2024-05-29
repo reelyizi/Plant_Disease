@@ -172,11 +172,8 @@ def show_prediction_with_confidence(image_path, model, transform, i, randomImage
 
 # Set this to the number of classes in your dataset
 model = CNN_NeuralNet(3, 38)
-model.load_state_dict(torch.load('plant_disease_model_1epochs.pth'))
+model.load_state_dict(torch.load('plant_disease_model_1epochs.pth', map_location=device))
 model.eval()
-
-# Move the model to the appropriate device
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 
 fig = plt.figure(figsize=(6, 4))
