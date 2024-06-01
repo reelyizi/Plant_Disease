@@ -7,8 +7,6 @@ from PIL import Image
 import torchvision.transforms as transforms
 from torchvision.datasets import ImageFolder
 import torch.nn.functional as F
-from colorama import Fore, Style
-import matplotlib
 import math
 import random
 
@@ -46,7 +44,6 @@ def to_device(data, device):
 
 
 class ImageClassificationBase(nn.Module):
-
     def training_step(self, batch):
         images, labels = batch
         images = images.to(device)  # Move images to the correct device
@@ -88,17 +85,11 @@ def ConvBlock(in_channels, out_channels, pool=False):
 class CNN_NeuralNet(ImageClassificationBase):
     def __init__(self, in_channels, num_diseases):
         super().__init__()
-
         self.conv1 = ConvBlock(in_channels, 64)
         self.conv2 = ConvBlock(64, 128, pool=True)
         self.res1 = nn.Sequential(ConvBlock(128, 128), ConvBlock(128, 128))
-
         self.conv3 = ConvBlock(128, 256, pool=True)
         self.conv4 = ConvBlock(256, 512, pool=True)
-        # self.conv5 = ConvBlock(256, 256, pool=True)
-        # self.conv6 = ConvBlock(256, 512, pool=True)
-        # self.conv7 = ConvBlock(512, 512, pool=True)
-
         self.res2 = nn.Sequential(ConvBlock(512, 512), ConvBlock(512, 512))
         self.classifier = nn.Sequential(nn.MaxPool2d(4),
                                         nn.Flatten(),
@@ -110,21 +101,28 @@ class CNN_NeuralNet(ImageClassificationBase):
         out = self.res1(out) + out
         out = self.conv3(out)
         out = self.conv4(out)
-        # out = self.conv5(out)
-        # out = self.conv6(out)
-        # out = self.conv7(out)
         out = self.res2(out) + out
         out = self.classifier(out)
         return out
 
-
 device = get_default_device()
-model = to_device(CNN_NeuralNet(3, len(train.classes)), device)
 
-transform = transforms.Compose([
-    transforms.Resize((256, 256)),
-    transforms.ToTensor(),
-])
+def initialize_model():
+    global model, transform, test_images_dir, image_files, fig, train
+    model = to_device(CNN_NeuralNet(3, len(train.classes)), device)
+    transform = transforms.Compose([
+        transforms.Resize((256, 256)),
+        transforms.ToTensor(),
+    ])
+    model = CNN_NeuralNet(3, 38)
+    model.load_state_dict(torch.load(
+        'plant_disease_model_1epochs.pth', map_location=device))
+    model.eval()
+    model.to(device)
+    test_images_dir = 'PlantDisease/plant_diseases_dataset/test/test'
+    image_files = [f for f in os.listdir(test_images_dir) if os.path.isfile(
+        os.path.join(test_images_dir, f))]
+    fig = plt.figure(figsize=(6, 4))
 
 
 def accuracy(outputs, labels):
@@ -138,64 +136,37 @@ def calculate_accuracy(preds, labels):
 
 
 def predict_image(img, model):
-    """Converts image to array and return the predicted class
-       with highest probability"""
-    # Convert to a batch of 1
+    """Converts image to array and return the predicted class with highest probability"""
     xb = to_device(img.unsqueeze(0), device)
-    # Get predictions from model
     yb = model(xb)
-    # Pick index with highest probability
-    _, preds = torch.max(yb, dim=1)
-    # Retrieve the class label
-
-    true_label = torch.tensor([0], device=device)  # Replace with actual label
-
-    accuracy = calculate_accuracy(preds, true_label)
-    print(f"Accuracy: {accuracy * 100:.2f}%")
-
-    return train.classes[preds[0].item()]
+    prob, preds = torch.max(torch.nn.functional.softmax(yb, dim=1), dim=1)
+    return train.classes[preds[0].item()], prob[0].item()
 
 
-def show_prediction_with_confidence(image_path, model, transform, i, randomImage):
+def show_prediction_with_confidence(image_path, model, transform):
     img = Image.open(image_path)
     transformed_img = transform(img)
+    predicted_label, probability = predict_image(transformed_img, model)
+    # fig.add_subplot(3, 2, i)
+    # plt.imshow(img)
+    # plt.axis('off')
+    # plt.title(
+    #     f"Predicted: {predicted_label} ({probability * 100:.2f}%) /N actual: {randomImage}")
+    # print(
+    #     f"Predicted: {predicted_label} with probability {probability * 100:.2f}% actual: {randomImage}")
+    return predicted_label, probability
 
-    predicted_label = predict_image(transformed_img, model)
 
-    fig.add_subplot(3, 2, i)
-    plt.imshow(img)
-    plt.axis('off')
-    plt.title(f"Predicted: {predicted_label} /N actual: {randomImage}")
-    print("predic: ", predicted_label, " actual: ", randomImage)
-    return i + 1
-
-
-# Set this to the number of classes in your dataset
-model = CNN_NeuralNet(3, 38)
-model.load_state_dict(torch.load('plant_disease_model_1epochs.pth', map_location=device))
-model.eval()
-model.to(device)
-
-fig = plt.figure(figsize=(6, 4))
-
-test_images_dir = 'PlantDisease/plant_diseases_dataset/test/test'
-image_files = [f for f in os.listdir(test_images_dir) if os.path.isfile(
-    os.path.join(test_images_dir, f))]
-
-i = 1  # Start with 1 because subplot indices are 1-based
-
-# Number of images to display
-num_images = 6
-
-for _ in range(num_images):
-    # Randomly select an image
-    random_image = random.choice(image_files)
-    image_path = os.path.join(test_images_dir, random_image)
-
-    # Check if the image path exists
-    if os.path.exists(image_path):
-        i = show_prediction_with_confidence(
-            image_path, model, transform, i, random_image)
-
-plt.tight_layout()
-plt.show()
+def PredictGivenImage(image_path):
+    initialize_model()
+    show_prediction_with_confidence(
+    image_path, model, transform)
+    # i = 1
+    # for _ in range(6):  # Adjusted to a fixed number of images
+    #     random_image = random.choice(image_files)
+    #     image_path = os.path.join(test_images_dir, random_image)
+    #     if os.path.exists(image_path):
+    #         i = show_prediction_with_confidence(
+    #             image_path, model, transform, i, random_image)
+    plt.tight_layout()
+    plt.show()

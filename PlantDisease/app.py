@@ -1,24 +1,25 @@
-import warnings
-warnings.filterwarnings('ignore') 
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-import os
-import torch
-import torch.nn as nn
-from torch.utils.data import DataLoader
-from PIL import Image
-import torchvision
-import torchvision.transforms as transforms
-from torchvision.datasets import ImageFolder
-import torch.optim as optim
-import torch.nn.functional as F
-import colorama
-from colorama import Fore, Style
-import matplotlib
-import time
 import random
+import time
+import matplotlib
+from colorama import Fore, Style
+import colorama
+import torch.nn.functional as F
+import torch.optim as optim
+from torchvision.datasets import ImageFolder
+import torchvision.transforms as transforms
+import torchvision
+from PIL import Image
+from torch.utils.data import DataLoader
+import torch.nn as nn
+import torch
+import os
+import seaborn as sns
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import warnings
+warnings.filterwarnings('ignore')
+
 
 def main():
     Root_dir = "PlantDisease/plant_diseases_dataset/New Plant Diseases Dataset(Augmented)/New Plant Diseases Dataset(Augmented)"
@@ -31,8 +32,10 @@ def main():
     valid = ImageFolder(valid_dir, transform=transforms.ToTensor())
 
     batch_size = 32
-    train_dataloader = DataLoader(train, batch_size, shuffle=True, num_workers=2, pin_memory=True)
-    valid_dataloader = DataLoader(valid, batch_size, num_workers=2, pin_memory=True)
+    train_dataloader = DataLoader(
+        train, batch_size, shuffle=True, num_workers=2, pin_memory=True)
+    valid_dataloader = DataLoader(
+        valid, batch_size, num_workers=2, pin_memory=True)
 
     def save_model(model, path):
         torch.save(model.state_dict(), path)
@@ -63,6 +66,7 @@ def main():
     # for loading in the device (GPU if available else CPU)
     class DeviceDataLoader():
         """Wrap a dataloader to move data to a device"""
+
         def __init__(self, dataloader, device):
             self.dataloader = dataloader
             self.device = device
@@ -133,9 +137,9 @@ def main():
 
             self.conv3 = ConvBlock(128, 256, pool=True)
             self.conv4 = ConvBlock(256, 512, pool=True)
-            #self.conv5 = ConvBlock(256, 256, pool=True)
-            #self.conv6 = ConvBlock(256, 512, pool=True)
-            #self.conv7 = ConvBlock(512, 512, pool=True)
+            # self.conv5 = ConvBlock(256, 256, pool=True)
+            # self.conv6 = ConvBlock(256, 512, pool=True)
+            # self.conv7 = ConvBlock(512, 512, pool=True)
 
             self.res2 = nn.Sequential(ConvBlock(512, 512), ConvBlock(512, 512))
             self.classifier = nn.Sequential(nn.MaxPool2d(4),
@@ -148,9 +152,9 @@ def main():
             out = self.res1(out) + out
             out = self.conv3(out)
             out = self.conv4(out)
-            #out = self.conv5(out)
-            #out = self.conv6(out)
-            #out = self.conv7(out)
+            # out = self.conv5(out)
+            # out = self.conv6(out)
+            # out = self.conv7(out)
             out = self.res2(out) + out
             out = self.classifier(out)
             return out
@@ -158,7 +162,8 @@ def main():
     # defining the model and moving it to the GPU
     # 3 is number of channels RGB, len(train.classes()) is number of diseases.
     model = to_device(CNN_NeuralNet(3, len(train.classes)), device)
-    print(f"Model is on device: {next(model.parameters()).device}")  # Debug statement
+    # Debug statement
+    print(f"Model is on device: {next(model.parameters()).device}")
 
     # for training
     @torch.no_grad()
@@ -178,7 +183,8 @@ def main():
         val_acc_history = []  # For collecting validation accuracy
         val_loss_history = []  # For collecting validation loss
 
-        optimizer = opt_func(model.parameters(), max_lr, weight_decay=weight_decay)
+        optimizer = opt_func(model.parameters(), max_lr,
+                             weight_decay=weight_decay)
         # scheduler for one cycle learning rate
         # Sets the learning rate of each parameter group according to the 1cycle learning rate policy.
         # The 1cycle policy anneals the learning rate from an initial learning rate to some
@@ -187,7 +193,7 @@ def main():
         sched = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr,
                                                     epochs=epochs, steps_per_epoch=len(train_loader))
 
-        start_time = time.time() 
+        start_time = time.time()
         for epoch in range(epochs):
             # Training
             model.train()
@@ -217,26 +223,27 @@ def main():
             result['lrs'] = lrs
             model.epoch_end(epoch, result)
             history.append(result)
-            
+
             # Collect validation accuracy and loss
             val_acc_history.append(result['val_acc'])
             val_loss_history.append(result['val_loss'])
 
         end_time = time.time()  # End the timer
         total_time = end_time - start_time
-        print(f"Training completed in: {total_time // 60:.0f} minutes {total_time % 60:.0f} seconds")
+        print(
+            f"Training completed in: {total_time // 60:.0f} minutes {total_time % 60:.0f} seconds")
         return history
 
-    num_epoch = 5
     lr_rate = 0.01
     grad_clip = 0.15
     weight_decay = 1e-4
     optims = torch.optim.Adam
-    #history = fit_OneCycle(epochs=1, max_lr=0.01, model=model, train_loader=train_dataloader, val_loader=valid_dataloader, weight_decay=weight_decay, grad_clip=grad_clip, opt_func=optims)
-    history = fit_OneCycle(epochs=1, max_lr=lr_rate, model=model, train_loader=train_dataloader, val_loader=valid_dataloader, grad_clip=grad_clip, weight_decay=weight_decay, opt_func=optims)
+    # history = fit_OneCycle(epochs=1, max_lr=0.01, model=model, train_loader=train_dataloader, val_loader=valid_dataloader, weight_decay=weight_decay, grad_clip=grad_clip, opt_func=optims)
+    history = fit_OneCycle(epochs=1, max_lr=lr_rate, model=model, train_loader=train_dataloader,
+                           val_loader=valid_dataloader, grad_clip=grad_clip, weight_decay=weight_decay, opt_func=optims)
 
-    #print(history)
-    
+    # print(history)
+
     save_model(model, "plant_disease_model_1epochs.pth")
 
     transform = transforms.Compose([
@@ -254,15 +261,15 @@ def main():
         # Pick index with highest probability
         _, preds = torch.max(yb, dim=1)
         # Retrieve the class label
-        
+
         return train.classes[preds[0].item()]
 
     def show_prediction_with_confidence(image_path, model, transform, i, randomImage):
         img = Image.open(image_path)
         transformed_img = transform(img)
-        
+
         predicted_label = predict_image(transformed_img, model)
-        
+
         fig.add_subplot(3, 2, i)
         plt.imshow(img)
         plt.axis('off')
@@ -271,11 +278,14 @@ def main():
         return i + 1
 
     fig = plt.figure(figsize=(8, 6))
-    
+
     test_images_dir = 'PlantDisease/plant_diseases_dataset/test/test'
-    image_files = [f for f in os.listdir(test_images_dir) if os.path.isfile(os.path.join(test_images_dir, f))]
+    image_files = [f for f in os.listdir(test_images_dir) if os.path.isfile(
+        os.path.join(test_images_dir, f))]
 
     fig = plt.figure(figsize=(12, 12))
+    
+    # Predict the images after the model is trained
     i = 1  # Start with 1 because subplot indices are 1-based
 
     # Number of images to display
@@ -285,13 +295,16 @@ def main():
         # Randomly select an image
         random_image = random.choice(image_files)
         image_path = os.path.join(test_images_dir, random_image)
-        
+
         # Check if the image path exists
         if os.path.exists(image_path):
-            i = show_prediction_with_confidence(image_path, model, transform, i, random_image)
+            i = show_prediction_with_confidence(
+                image_path, model, transform, i, random_image)
 
     plt.show()
-
+    # Image prediction is end here
+    
+    
     val_acc = []
     val_loss = []
     train_loss = []
@@ -310,6 +323,6 @@ def main():
     plt.ylabel('Loss')
     plt.show()
 
-    
+
 if __name__ == "__main__":
     main()
