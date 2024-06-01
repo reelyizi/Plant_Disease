@@ -161,7 +161,7 @@ def show_prediction_with_confidence(image_path, model, transform):
 
 def PredictGivenImage(image_path):
     initialize_model()
-    show_prediction_with_confidence(
+    return show_prediction_with_confidence(
         image_path, model, transform)
     # i = 1
     # for _ in range(6):  # Adjusted to a fixed number of images
