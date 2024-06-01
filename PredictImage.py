@@ -105,7 +105,9 @@ class CNN_NeuralNet(ImageClassificationBase):
         out = self.classifier(out)
         return out
 
+
 device = get_default_device()
+
 
 def initialize_model():
     global model, transform, test_images_dir, image_files, fig, train
@@ -160,7 +162,7 @@ def show_prediction_with_confidence(image_path, model, transform):
 def PredictGivenImage(image_path):
     initialize_model()
     show_prediction_with_confidence(
-    image_path, model, transform)
+        image_path, model, transform)
     # i = 1
     # for _ in range(6):  # Adjusted to a fixed number of images
     #     random_image = random.choice(image_files)
@@ -168,5 +170,3 @@ def PredictGivenImage(image_path):
     #     if os.path.exists(image_path):
     #         i = show_prediction_with_confidence(
     #             image_path, model, transform, i, random_image)
-    plt.tight_layout()
-    plt.show()
