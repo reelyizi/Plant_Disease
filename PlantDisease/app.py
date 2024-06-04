@@ -238,13 +238,10 @@ def main():
     grad_clip = 0.15
     weight_decay = 1e-4
     optims = torch.optim.Adam
-    # history = fit_OneCycle(epochs=1, max_lr=0.01, model=model, train_loader=train_dataloader, val_loader=valid_dataloader, weight_decay=weight_decay, grad_clip=grad_clip, opt_func=optims)
-    history = fit_OneCycle(epochs=1, max_lr=lr_rate, model=model, train_loader=train_dataloader,
+    history = fit_OneCycle(epochs=5, max_lr=lr_rate, model=model, train_loader=train_dataloader,
                            val_loader=valid_dataloader, grad_clip=grad_clip, weight_decay=weight_decay, opt_func=optims)
 
-    # print(history)
-
-    save_model(model, "plant_disease_model_1epochs.pth")
+    save_model(model, "plant_disease_model_5epochs.pth")
 
     transform = transforms.Compose([
         transforms.Resize((256, 256)),

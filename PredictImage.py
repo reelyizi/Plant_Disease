@@ -106,10 +106,12 @@ class CNN_NeuralNet(ImageClassificationBase):
         return out
 
 
+# Get the device
 device = get_default_device()
 
 
 def initialize_model():
+    """Initialize the model and other necessary components"""
     global model, transform, test_images_dir, image_files, fig, train
     model = to_device(CNN_NeuralNet(3, len(train.classes)), device)
     transform = transforms.Compose([
@@ -118,7 +120,7 @@ def initialize_model():
     ])
     model = CNN_NeuralNet(3, 38)
     model.load_state_dict(torch.load(
-        'plant_disease_model_1epochs.pth', map_location=device))
+        'plant_disease_model_5epochs.pth', map_location=device))
     model.eval()
     model.to(device)
     test_images_dir = 'PlantDisease/plant_diseases_dataset/test/test'
@@ -128,6 +130,7 @@ def initialize_model():
 
 
 def accuracy(outputs, labels):
+    """Calculate accuracy of predictions"""
     _, preds = torch.max(outputs, dim=1)
     return torch.tensor(torch.sum(preds == labels).item() / len(preds))
 
@@ -146,27 +149,15 @@ def predict_image(img, model):
 
 
 def show_prediction_with_confidence(image_path, model, transform):
+    """Show prediction with confidence for a given image"""
     img = Image.open(image_path)
     transformed_img = transform(img)
     predicted_label, probability = predict_image(transformed_img, model)
-    # fig.add_subplot(3, 2, i)
-    # plt.imshow(img)
-    # plt.axis('off')
-    # plt.title(
-    #     f"Predicted: {predicted_label} ({probability * 100:.2f}%) /N actual: {randomImage}")
-    # print(
-    #     f"Predicted: {predicted_label} with probability {probability * 100:.2f}% actual: {randomImage}")
     return predicted_label, probability
 
 
 def PredictGivenImage(image_path):
+    """Predict the given image"""
     initialize_model()
     return show_prediction_with_confidence(
         image_path, model, transform)
-    # i = 1
-    # for _ in range(6):  # Adjusted to a fixed number of images
-    #     random_image = random.choice(image_files)
-    #     image_path = os.path.join(test_images_dir, random_image)
-    #     if os.path.exists(image_path):
-    #         i = show_prediction_with_confidence(
-    #             image_path, model, transform, i, random_image)
