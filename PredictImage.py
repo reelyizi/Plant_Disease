@@ -49,7 +49,8 @@ class ImageClassificationBase(nn.Module):
         images = images.to(device)  # Move images to the correct device
         labels = labels.to(device)  # Move labels to the correct device
         out = self(images)  # Generate predictions
-        loss = F.cross_entropy(out, labels)  # Calculate loss
+        # Calculate loss, Compute the cross entropy loss between input logits and target.
+        loss = F.cross_entropy(out, labels)
         return loss
 
     def validation_step(self, batch):
@@ -58,7 +59,8 @@ class ImageClassificationBase(nn.Module):
         labels = labels.to(device)  # Move labels to the correct device
         out = self(images)  # Generate predictions
         loss = F.cross_entropy(out, labels)  # Calculate loss
-        acc = accuracy(out, labels)  # Calculate accuracy
+        # Calculate accuracy, Compute the cross entropy loss between input logits and target.
+        acc = accuracy(out, labels)
         return {'val_loss': loss.detach(), 'val_acc': acc}
 
     def validation_epoch_end(self, outputs):

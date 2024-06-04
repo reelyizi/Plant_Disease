@@ -80,6 +80,7 @@ def main():
             """Number of batches"""
             return len(self.dataloader)
 
+    # Function to calculate accuracy
     def accuracy(outputs, labels):
         _, preds = torch.max(outputs, dim=1)
         return torch.tensor(torch.sum(preds == labels).item() / len(preds))
@@ -165,7 +166,7 @@ def main():
     # Debug statement
     print(f"Model is on device: {next(model.parameters()).device}")
 
-    # for training
+    # Function to evaluate the model
     @torch.no_grad()
     def evaluate(model, val_loader):
         model.eval()
@@ -176,6 +177,7 @@ def main():
         for param_group in optimizer.param_groups:
             return param_group['lr']
 
+    # Function to train the model using non-cycle learning rate policy
     def fit_OneCycle(epochs, max_lr, model, train_loader, val_loader, weight_decay=0,
                      grad_clip=None, opt_func=torch.optim.SGD):
         torch.cuda.empty_cache()
